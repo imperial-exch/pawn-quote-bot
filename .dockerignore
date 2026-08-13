@@ -1,0 +1,11 @@
+# Keep the build context to source. `target/` is the expensive one — it can be
+# gigabytes, and every byte of it is sent to the daemon before the build starts.
+target/
+
+# Never let a real config or a signing key reach the build context, even by
+# accident: anything copied in is recoverable from the image.
+config.toml
+*-key.json
+*-keypair.json
+
+.git/

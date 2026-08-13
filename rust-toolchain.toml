@@ -1,0 +1,7 @@
+# Matches the monorepo this crate is mirrored from, so the version that builds
+# here is the version its tests ran against. Without this file a maker's `cargo
+# build` resolves the lockfile under whatever rustc they happen to have, which
+# is how the first published lockfile ended up requiring 1.88 while the code was
+# tested on 1.86.
+[toolchain]
+channel = "1.86.0"

@@ -1,0 +1,105 @@
+# pawn-quote-bot — example configuration.
+#
+# Copy to config.toml and fill in the placeholders. Every value below is an
+# EXAMPLE, not a recommendation; the limits in particular decide how much money
+# you can lose and nobody else can choose them for you.
+#
+# UNITS: this file is written in whole DOLLARS. The wire is 6-decimal micro-USD.
+# The bot converts once, at load.
+
+[maker]
+# The imperial_pawn program id for the cluster you are quoting on. Ask for the
+# one that matches your API endpoint — mainnet and staging differ, and the wrong
+# one derives a MarketMaker PDA that does not exist.
+program_id = "REPLACE_WITH_THE_PAWN_PROGRAM_ID"
+
+# API root, INCLUDING the version prefix. Paths are appended verbatim, so this
+# must end at /api/v1 and not at the host.
+api_base = "https://REPLACE_WITH_THE_API_HOST/api/v1"
+
+# Your seed authority pubkey. IDENTITY, not a signing key: it is the `x-pawn-mm`
+# header and the seed of your [b"mm", authority] account. Keep the private half
+# of this offline — it is what signs MM_BUY when you exercise a put.
+authority = "REPLACE_WITH_YOUR_AUTHORITY_PUBKEY"
+
+# The hot key that signs appraisals, as a solana-keygen JSON byte array. Its
+# public key must equal the registered MarketMaker.quote_pubkey; the bot refuses
+# to start otherwise. It should NOT be your authority key — see the README.
+quote_keypair = "./quote-key.json"
+
+# A DAS-capable Solana RPC. Used to read your own MarketMaker account at startup
+# and, for the face_value_pct engine, to getAsset each card. A plain RPC without
+# the DAS extension will fail with a clear message.
+rpc_url = "https://REPLACE_WITH_A_DAS_CAPABLE_RPC"
+
+# Price and log, submit nothing. Leave this true until you have watched the bot
+# run against live auctions and agree with the numbers it prints.
+dry_run = true
+
+[pricing]
+# "face_value_pct" or "command".
+engine = "face_value_pct"
+
+# face_value_pct only: appraise at this percent of the card's stated face value.
+# A card with no readable face value is SKIPPED, never guessed.
+face_value_pct = 60
+
+# Optional. Metadata attribute names searched, in order, for the face value.
+# Matched case-insensitively against the DAS `trait_type`. Defaults to:
+# face_value_traits = ["Insured Value", "insuredValue", "Face Value", "Value"]
+
+  # Only read when engine = "command".
+  [pricing.command]
+  # An executable. Receives {"rfq": {...}, "card": {...}} as JSON on stdin and
+  # answers with {"appraisal_usd": N} in MICRO-USD, or {"skip": "reason"}.
+  path = "./my-pricer"
+  # The auction window is about ten seconds and this comes out of it.
+  timeout_ms = 3000
+
+[limits]
+# Bounds on the APPRAISAL, not the principal.
+min_appraisal_usd = 25
+# An appraisal of max_appraisal_usd consumes
+# max_appraisal_usd * openLtvBps / 10000 of your on-chain cap, and puts you on
+# the hook for the whole max_appraisal_usd if the card is put to you.
+max_appraisal_usd = 2000
+
+# A LOCAL MIRROR of the on-chain MarketMaker.max_outstanding_usd, in PRINCIPAL.
+# Keep it under the on-chain cap — the chain is the real limit, and this exists
+# so the bot stops before the API starts refusing it.
+max_outstanding_usd = 800
+
+# Concurrent principal against any one collection. Session-scoped: the protocol
+# has no per-collection notion, so this is the bot's own concentration guard.
+max_per_collection_usd = 500
+
+[eligibility]
+# MPL Core only, by default and on purpose. A pNFT whose TokenRecord is Locked
+# cannot be transferred, so if one defaults your MM_BUY reverts and you cannot
+# exercise the put you already paid for. See the README before widening this.
+standards = ["mpl_core"]
+
+# Verified collection addresses. EMPTY MEANS ANY, which is the permissive
+# setting — name the collections you have actually priced.
+collections = []
+
+# Grading companies to accept, matched case-insensitively. Empty means any.
+grading = ["PSA", "BGS"]
+
+# Optional. Attribute names searched, in order, for the grading company.
+# Defaults to: grading_traits = ["Grading Company", "gradingCompany", "Grader"]
+
+[quote]
+# How long a signed quote stays valid. A PREFERENCE inside the window each round
+# announces, not a setting that overrides it: the bot raises this to the round's
+# own minExpiryTs and cuts it down to the round's maxExpiryTs.
+#
+# The ceiling is the protocol's. LOAN_OPEN refuses an envelope whose expiry sits
+# more than 900 seconds ahead of the chain clock, and the API stamps maxExpiryTs
+# at 600 seconds past the round opening so that honest opens survive the chain
+# clock lagging wall-clock. A value above 900 is refused at startup; a value
+# above the announced maxExpiryTs is simply cut down.
+#
+# A live quote is a bearer instrument someone can open a loan against at any
+# instant in the fifteen minutes before its expiry, so longer is not free.
+expiry_secs = 120

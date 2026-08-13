@@ -1,0 +1,49 @@
+[package]
+# NOT `quote_bot`: `services/quote_bot` already claims that package name in this
+# workspace and two packages cannot share one. The directory is `tools/quote_bot`
+# and the binary is `pawn-quote-bot`; only the cargo package name differs.
+name = "pawn_quote_bot"
+version = "0.1.0"
+edition = "2021"
+# The toolchain this crate is built and tested against. Stated so cargo says
+# so plainly, instead of failing deep in a dependency\'s syntax.
+rust-version = "1.86"
+license = "MIT"
+description = "Market-maker quoting bot for the Imperial pawn RFQ auction"
+
+[[bin]]
+name = "pawn-quote-bot"
+path = "src/main.rs"
+
+# Dependency versions are LITERAL here, and `[lints] workspace = true` is
+# deliberately absent, which deviates from the rest of this monorepo. This crate
+# is mirrored to a standalone public repository that third-party market makers
+# clone; anything inherited from the workspace root would not exist there and
+# the lifted-out crate would not build. It stays a workspace member so monorepo
+# CI still compiles it.
+
+[dependencies]
+solana-sdk = "2.2.3"
+tokio = { version = "1", features = [
+  "macros",
+  "rt-multi-thread",
+  "process",
+  "time",
+  "signal",
+  "sync",
+  "io-util",
+] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+futures-util = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = { version = "0.9", default-features = false, features = ["parse", "serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+clap = { version = "4", features = ["derive", "env"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+hex = "0.4"
+bs58 = "0.5"
+base64 = "0.22"

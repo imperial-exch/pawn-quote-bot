@@ -1,0 +1,11 @@
+# Redundant inside the monorepo, load-bearing once this directory is mirrored
+# out on its own: the public repo has no root .gitignore to inherit.
+/target
+
+# Your live config names your hot key's path and your risk limits. The example
+# is the one that belongs in git.
+config.toml
+
+# solana-keygen JSON keypairs. Anything matching this is a private key.
+*-key.json
+*-keypair.json
